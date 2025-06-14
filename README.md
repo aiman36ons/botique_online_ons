@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Ons_Techno E-commerce Platform
 
 A multilingual e-commerce platform specializing in IT accessories, digital products, and IT services.
@@ -82,3 +83,7 @@ Please read our contributing guidelines before submitting pull requests.
 ## License
 
 This project is licensed under the MIT License. 
+=======
+# botique_online_ons
+Ons_Techno is a multilingual e-commerce web app for selling IT accessories, digital products, and services. Built with Laravel (backend) and React (frontend), it supports PayPal, BaridiMob, and Cash on Delivery payments. The platform includes product listings, a shopping cart, user accounts, and an admin dashboard.
+>>>>>>> 9453dfd4439f1ed6c9f9f98bf60c1d5087e7996b
