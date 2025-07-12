@@ -18,27 +18,30 @@ class Order extends Model
         'payment_status',
         'shipping_address',
         'billing_address',
-        'currency'
+        'currency',
+        'customer_info',
+        'notes'
     ];
 
     protected $casts = [
         'total_amount' => 'decimal:2',
         'shipping_address' => 'array',
-        'billing_address' => 'array'
+        'billing_address' => 'array',
+        'customer_info' => 'array',
     ];
 
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    public function items()
+    public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
     }
 
-    public function getFormattedTotalAttribute()
+    public function user()
     {
-        return number_format($this->total_amount, 2) . ' ' . $this->currency;
+        return $this->belongsTo(User::class)->withDefault(['name' => 'Client supprimé']);
+    }
+
+    public function getCustomerNameAttribute()
+    {
+        return $this->user ? $this->user->name : ($this->customer_info['full_name'] ?? 'Client invité');
     }
 } 

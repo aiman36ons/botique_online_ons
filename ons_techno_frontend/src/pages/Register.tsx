@@ -11,19 +11,40 @@ import {
   Box,
   useTheme
 } from '@mui/material';
+import { useAuth } from '../contexts/AuthContext';
 
 const Register: React.FC = () => {
   const { t } = useTranslation();
   const theme = useTheme();
+  const { register } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    // TODO: Implement registration functionality
-    console.log('Register:', { name, email, password });
+    setError(null);
+    setLoading(true);
+    if (password !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas.');
+      setLoading(false);
+      return;
+    }
+    try {
+      await register({
+        name,
+        email,
+        password,
+        password_confirmation: confirmPassword,
+      });
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Erreur lors de l\'inscription');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -32,6 +53,9 @@ const Register: React.FC = () => {
         {t('auth.register')}
       </Typography>
       <Paper sx={{ p: 4 }}>
+        {error && (
+          <Box sx={{ mb: 2 }} color="error.main">{error}</Box>
+        )}
         <form onSubmit={handleSubmit}>
           <TextField
             fullWidth
@@ -74,8 +98,9 @@ const Register: React.FC = () => {
             variant="contained"
             color="primary"
             sx={{ mt: 3 }}
+            disabled={loading}
           >
-            {t('auth.register')}
+            {loading ? t('auth.loading') : t('auth.register')}
           </Button>
           <Box sx={{ mt: 2, textAlign: 'center' }}>
             <Link component={RouterLink} to="/login">

@@ -1,155 +1,158 @@
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Container,
-  Typography,
-  Card,
-  CardContent,
-  Button,
-  Box,
-  IconButton,
-  TextField,
-  useTheme
+    Container,
+    Typography,
+    Box,
+    Button,
+    Grid,
+    Card,
+    CardContent,
+    IconButton,
+    TextField,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Paper,
+    Divider
 } from '@mui/material';
-import {
-  Delete as DeleteIcon,
-  Add as AddIcon,
-  Remove as RemoveIcon
-} from '@mui/icons-material';
+import { Delete as DeleteIcon } from '@mui/icons-material';
+import { useCart } from '../contexts/CartContext';
 
-interface CartItem {
-  id: number;
-  product: {
-    name: string;
-    price: number;
-    image: string;
-  };
-  quantity: number;
-}
-
-const Cart: React.FC = () => {
-  const { t } = useTranslation();
-  const theme = useTheme();
-  const navigate = useNavigate();
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // TODO: Fetch cart items from API or local storage
-    setCartItems([
-      {
-        id: 1,
-        product: { name: 'Produit 1', price: 1000, image: '' },
-        quantity: 2
-      },
-      {
-        id: 2,
-        product: { name: 'Produit 2', price: 1500, image: '' },
-        quantity: 1
-      }
-    ]);
-    setLoading(false);
-  }, []);
-
-  const handleQuantityChange = (id: number, delta: number) => {
-    setCartItems((items) =>
-      items.map((item) =>
-        item.id === id
-          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
-          : item
-      )
-    );
-  };
-
-  const handleRemove = (id: number) => {
-    setCartItems((items) => items.filter((item) => item.id !== id));
-  };
-
-  const subtotal = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-
-  if (loading) {
-    return (
-      <Container>
-        <Typography>Loading...</Typography>
-      </Container>
-    );
-  }
-
-  return (
-    <Container maxWidth="lg">
-      <Typography variant="h4" component="h1" gutterBottom>
-        {t('cart.title')}
-      </Typography>
-      {cartItems.length === 0 ? (
-        <Card>
-          <CardContent>
-            <Typography align="center" color="textSecondary">
-              {t('cart.empty')}
-            </Typography>
-            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
-              <Button variant="contained" color="primary" onClick={() => navigate('/products')}>
-                {t('products.title')}
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
-      ) : (
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' }, gap: 3 }}>
-          <Box>
-            {cartItems.map((item) => (
-              <Card key={item.id} sx={{ mb: 2 }}>
-                <CardContent>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr 1fr auto', gap: 2, alignItems: 'center' }}>
-                    <Box sx={{ width: 80, height: 80, bgcolor: 'grey.200' }} />
-                    <Box>
-                      <Typography variant="h6">{item.product.name}</Typography>
-                      <Typography color="textSecondary">{item.product.price} DZD</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <IconButton onClick={() => handleQuantityChange(item.id, -1)}>
-                        <RemoveIcon />
-                      </IconButton>
-                      <TextField
-                        value={item.quantity}
-                        size="small"
-                        sx={{ width: 50, mx: 1 }}
-                        inputProps={{ readOnly: true, style: { textAlign: 'center' } }}
-                      />
-                      <IconButton onClick={() => handleQuantityChange(item.id, 1)}>
-                        <AddIcon />
-                      </IconButton>
-                    </Box>
-                    <Typography>{item.product.price * item.quantity} DZD</Typography>
-                    <IconButton color="error" onClick={() => handleRemove(item.id)}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
-                </CardContent>
-              </Card>
-            ))}
-          </Box>
-          <Box>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">{t('cart.summary')}</Typography>
-                <Typography>{t('cart.subtotal')}: {subtotal} DZD</Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  sx={{ mt: 2 }}
-                  onClick={() => navigate('/checkout')}
-                >
-                  {t('cart.checkout')}
-                </Button>
-              </CardContent>
-            </Card>
-          </Box>
-        </Box>
-      )}
-    </Container>
-  );
+// Fonction utilitaire pour formater le prix
+const formatPrice = (price: number | string): string => {
+    if (price === null || price === undefined) return '0.00';
+    
+    const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
+    
+    if (isNaN(numericPrice)) return '0.00';
+    
+    return numericPrice.toFixed(2);
 };
 
-export default Cart; 
+// Fonction pour calculer le prix total d'un item
+const calculateItemTotal = (price: number | string, quantity: number): string => {
+    const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
+    return (numericPrice * quantity).toFixed(2);
+};
+
+export default function Cart() {
+    const { items, totalPrice, clearCart, updateQuantity, removeFromCart } = useCart();
+    const navigate = useNavigate();
+
+    if (items.length === 0) {
+        return (
+            <Container maxWidth="lg" sx={{ py: 4 }}>
+                <Typography variant="h5" gutterBottom>
+                    Votre panier est vide
+                </Typography>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => navigate('/products')}
+                >
+                    Continuer vos achats
+                </Button>
+            </Container>
+        );
+    }
+
+    return (
+        <Container maxWidth="lg" sx={{ py: 4 }}>
+            <Typography variant="h4" gutterBottom>
+                Votre panier
+            </Typography>
+            <Grid container spacing={3}>
+                <Grid item xs={12} md={8}>
+                    <TableContainer component={Paper} sx={{ mb: 2 }}>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Image</TableCell>
+                                    <TableCell>Produit</TableCell>
+                                    <TableCell>Prix unitaire</TableCell>
+                                    <TableCell>Quantité</TableCell>
+                                    <TableCell>Total</TableCell>
+                                    <TableCell>Action</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {items.map((item) => (
+                                    <TableRow key={item.id}>
+                                        <TableCell>
+                                            <img
+                                                src={item.image}
+                                                alt={item.name}
+                                                style={{ width: 60, height: 60, objectFit: 'contain' }}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Typography variant="subtitle1">{item.name}</Typography>
+                                        </TableCell>
+                                        <TableCell>{formatPrice(item.price)} €</TableCell>
+                                        <TableCell>
+                                            <TextField
+                                                type="number"
+                                                value={item.quantity}
+                                                onChange={(e) => {
+                                                    const value = parseInt(e.target.value);
+                                                    if (value > 0 && value <= item.stock) {
+                                                        updateQuantity(item.id, value);
+                                                    }
+                                                }}
+                                                inputProps={{ min: 1, max: item.stock }}
+                                                size="small"
+                                                sx={{ width: 70 }}
+                                            />
+                                        </TableCell>
+                                        <TableCell>{calculateItemTotal(item.price, item.quantity)} €</TableCell>
+                                        <TableCell>
+                                            <IconButton color="error" onClick={() => removeFromCart(item.id)}>
+                                                <DeleteIcon />
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                    <Card>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                                Résumé de la commande
+                            </Typography>
+                            <Divider sx={{ my: 2 }} />
+                            <Box sx={{ my: 2 }}>
+                                <Typography variant="body1">
+                                    Total: {typeof totalPrice === 'string' ? parseFloat(totalPrice).toFixed(2) : totalPrice.toFixed(2)} €
+                                </Typography>
+                            </Box>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                fullWidth
+                                onClick={() => navigate('/checkout')}
+                                sx={{ mb: 1 }}
+                            >
+                                Passer la commande
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                color="error"
+                                fullWidth
+                                onClick={clearCart}
+                            >
+                                Vider le panier
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+        </Container>
+    );
+} 

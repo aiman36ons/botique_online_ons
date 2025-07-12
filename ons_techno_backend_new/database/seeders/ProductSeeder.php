@@ -3,53 +3,58 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Product;
+use Illuminate\Support\Facades\DB;
 
 class ProductSeeder extends Seeder
 {
     public function run(): void
     {
-        $products = [
+        DB::table('products')->insert([
             [
-                'name' => 'Clavier Mécanique RGB',
-                'description' => 'Clavier mécanique gaming avec rétroéclairage RGB et switches bleus',
-                'price' => 89.99,
-                'image' => 'keyboard.jpg',
-                'type' => 'hardware',
-                'stock' => 15,
-                'is_active' => true
-            ],
-            [
-                'name' => 'Souris Gaming',
-                'description' => 'Souris gaming avec capteur optique haute précision',
-                'price' => 49.99,
-                'image' => 'mouse.jpg',
-                'type' => 'hardware',
-                'stock' => 20,
-                'is_active' => true
-            ],
-            [
-                'name' => 'Windows 10 Pro',
-                'description' => 'Licence Windows 10 Pro 64-bit',
-                'price' => 199.99,
-                'image' => 'windows.jpg',
-                'type' => 'software',
+                'name' => 'Smartphone X',
+                'description' => 'Un smartphone puissant avec un excellent appareil photo',
+                'price' => 699.99,
                 'stock' => 50,
-                'is_active' => true
+                'image' => 'smartphone-x.jpg',
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
             [
-                'name' => 'Maintenance PC',
-                'description' => 'Service de maintenance et nettoyage de PC',
-                'price' => 29.99,
-                'image' => 'maintenance.jpg',
-                'type' => 'service',
-                'stock' => 999,
-                'is_active' => true
-            ]
-        ];
-
-        foreach ($products as $product) {
-            Product::create($product);
-        }
+                'name' => 'Laptop Pro',
+                'description' => 'Ordinateur portable haute performance pour les professionnels',
+                'price' => 1299.99,
+                'stock' => 30,
+                'image' => 'laptop-pro.jpg',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Tablette Ultra',
+                'description' => 'Tablette légère avec un écran haute résolution',
+                'price' => 499.99,
+                'stock' => 75,
+                'image' => 'tablette-ultra.jpg',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Smartwatch Elite',
+                'description' => 'Montre connectée avec suivi d\'activité avancé',
+                'price' => 299.99,
+                'stock' => 100,
+                'image' => 'smartwatch-elite.jpg',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Écouteurs Sans Fil',
+                'description' => 'Écouteurs sans fil avec réduction de bruit active',
+                'price' => 199.99,
+                'stock' => 150,
+                'image' => 'ecouteurs-sans-fil.jpg',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
     }
 } 

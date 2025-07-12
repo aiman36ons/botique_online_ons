@@ -17,24 +17,17 @@ import {
   TableHead,
   TableRow,
   Paper,
-  useTheme
+  useTheme,
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
   Cancel as CancelIcon
 } from '@mui/icons-material';
-import axios from 'axios';
-
-interface Order {
-  id: number;
-  order_number: string;
-  total_amount: number;
-  status: string;
-  payment_method: string;
-  payment_status: string;
-  created_at: string;
-  items: OrderItem[];
-}
+import { getOrders, getAllOrders } from '../services/api';
+import { Order } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 interface OrderItem {
   id: number;
@@ -53,6 +46,7 @@ const Orders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { role } = useAuth();
 
   useEffect(() => {
     fetchOrders();
@@ -61,12 +55,21 @@ const Orders: React.FC = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/orders`);
-      setOrders(response.data.data);
       setError(null);
+      let response;
+      if (role === 'admin') {
+        response = await getAllOrders();
+      } else {
+        response = await getOrders();
+      }
+      if (response && response.data) {
+        setOrders(response.data);
+      } else {
+        throw new Error('Format de réponse invalide');
+      }
     } catch (err) {
-      setError(t('orders.fetchError'));
-      console.error(err);
+      console.error('Error fetching orders:', err);
+      setError(err instanceof Error ? err.message : 'Erreur lors du chargement des commandes');
     } finally {
       setLoading(false);
     }
@@ -74,11 +77,13 @@ const Orders: React.FC = () => {
 
   const handleCancelOrder = async (orderId: number) => {
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/orders/${orderId}/cancel`);
+      // TODO: Implémenter l'annulation de commande dans l'API
+      console.log('Cancelling order:', orderId);
+      // await cancelOrder(orderId);
       fetchOrders();
     } catch (err) {
-      setError(t('orders.cancelError'));
-      console.error(err);
+      console.error('Error cancelling order:', err);
+      setError('Erreur lors de l\'annulation de la commande');
     }
   };
 
@@ -97,10 +102,22 @@ const Orders: React.FC = () => {
     }
   };
 
+  const formatPrice = (price: number | string): string => {
+    if (price === null || price === undefined) return '0.00';
+    
+    const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
+    
+    if (isNaN(numericPrice)) return '0.00';
+    
+    return numericPrice.toFixed(2);
+  };
+
   if (loading) {
     return (
       <Container>
-        <Typography>Loading...</Typography>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+          <CircularProgress />
+        </Box>
       </Container>
     );
   }
@@ -108,7 +125,16 @@ const Orders: React.FC = () => {
   if (error) {
     return (
       <Container>
-        <Typography color="error">{error}</Typography>
+        <Alert severity="error">{error}</Alert>
+        <Box sx={{ mt: 2, textAlign: 'center' }}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => fetchOrders()}
+          >
+            Réessayer
+          </Button>
+        </Box>
       </Container>
     );
   }
@@ -116,14 +142,14 @@ const Orders: React.FC = () => {
   return (
     <Container maxWidth="lg">
       <Typography variant="h4" component="h1" gutterBottom>
-        {t('orders.title')}
+        Mes Commandes
       </Typography>
 
       {orders.length === 0 ? (
         <Card>
           <CardContent>
             <Typography align="center" color="textSecondary">
-              {t('orders.noOrders')}
+              Aucune commande trouvée
             </Typography>
             <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
               <Button
@@ -131,7 +157,7 @@ const Orders: React.FC = () => {
                 color="primary"
                 onClick={() => navigate('/products')}
               >
-                {t('products.title')}
+                Voir les produits
               </Button>
             </Box>
           </CardContent>
@@ -141,31 +167,35 @@ const Orders: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>{t('orders.orderNumber')}</TableCell>
-                <TableCell>{t('orders.date')}</TableCell>
-                <TableCell>{t('orders.total')}</TableCell>
-                <TableCell>{t('orders.status')}</TableCell>
-                <TableCell>{t('orders.paymentMethod')}</TableCell>
-                <TableCell>{t('orders.actions')}</TableCell>
+                <TableCell>Numéro de commande</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Total</TableCell>
+                <TableCell>Statut</TableCell>
+                <TableCell>Statut de paiement</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {orders.map((order) => (
                 <TableRow key={order.id}>
-                  <TableCell>{order.order_number}</TableCell>
+                  <TableCell>#{order.id}</TableCell>
                   <TableCell>
                     {new Date(order.created_at).toLocaleDateString()}
                   </TableCell>
-                  <TableCell>{order.total_amount} DZD</TableCell>
+                  <TableCell>{formatPrice(order.total)} €</TableCell>
                   <TableCell>
                     <Chip
-                      label={t(`orders.status.${order.status}`)}
+                      label={order.status}
                       color={getStatusColor(order.status) as any}
                       size="small"
                     />
                   </TableCell>
                   <TableCell>
-                    {t(`checkout.paymentMethods.${order.payment_method}`)}
+                    <Chip
+                      label={order.payment_status}
+                      color={order.payment_status === 'paid' ? 'success' : 'warning'}
+                      size="small"
+                    />
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 1 }}>
@@ -174,7 +204,7 @@ const Orders: React.FC = () => {
                         startIcon={<ViewIcon />}
                         onClick={() => navigate(`/orders/${order.id}`)}
                       >
-                        {t('orders.details')}
+                        Détails
                       </Button>
                       {order.status === 'pending' && (
                         <Button
@@ -183,7 +213,7 @@ const Orders: React.FC = () => {
                           startIcon={<CancelIcon />}
                           onClick={() => handleCancelOrder(order.id)}
                         >
-                          {t('orders.cancel')}
+                          Annuler
                         </Button>
                       )}
                     </Box>

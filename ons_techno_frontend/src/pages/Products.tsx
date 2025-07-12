@@ -13,6 +13,7 @@ import {
   MenuItem,
   Pagination
 } from '@mui/material';
+import axios from 'axios';
 
 interface Product {
   id: number;
@@ -21,6 +22,7 @@ interface Product {
   price: number;
   image: string;
   type: 'accessory' | 'digital' | 'service';
+  stock: number;
 }
 
 const Products: React.FC = () => {
@@ -29,46 +31,43 @@ const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [totalPages, setTotalPages] = useState(1);
 
   const type = searchParams.get('type') || 'all';
   const search = searchParams.get('search') || '';
   const page = parseInt(searchParams.get('page') || '1');
 
   useEffect(() => {
-    // Simuler un appel API
-    setLoading(true);
-    setTimeout(() => {
-      const mockProducts: Product[] = [
-        {
-          id: 1,
-          name: 'Clavier mécanique RGB',
-          description: 'Clavier mécanique gaming avec rétroéclairage RGB',
-          price: 12000,
-          image: '/images/keyboard.jpg',
-          type: 'accessory'
-        },
-        {
-          id: 2,
-          name: 'Souris gaming',
-          description: 'Souris gaming avec capteur optique haute précision',
-          price: 8000,
-          image: '/images/mouse.jpg',
-          type: 'accessory'
-        },
-        {
-          id: 3,
-          name: 'Licence Windows 10 Pro',
-          description: 'Licence numérique pour Windows 10 Professionnel',
-          price: 15000,
-          image: '/images/windows.jpg',
-          type: 'digital'
-        }
-      ];
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const params = new URLSearchParams({
+          page: page.toString(),
+        });
 
-      setProducts(mockProducts);
-      setLoading(false);
-    }, 1000);
-  }, []);
+        if (type !== 'all') {
+          params.append('type', type);
+        }
+
+        if (search) {
+          params.append('search', search);
+        }
+
+        const response = await axios.get(`http://localhost:8000/api/products?${params.toString()}`);
+        setProducts(response.data.data);
+        setTotalPages(Math.ceil(response.data.total / response.data.per_page));
+      } catch (err) {
+        setError(t('products.error', 'Erreur lors du chargement des produits'));
+        console.error('Error fetching products:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [type, search, page, t]);
 
   const handleTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchParams((prev: URLSearchParams) => {
@@ -150,7 +149,7 @@ const Products: React.FC = () => {
             <CardMedia
               component="img"
               height="200"
-              image={product.image}
+              image={product.image || '/images/placeholder.jpg'}
               alt={product.name}
             />
             <CardContent>
@@ -168,8 +167,11 @@ const Products: React.FC = () => {
                 color="primary"
                 fullWidth
                 sx={{ mt: 2 }}
+                disabled={product.stock === 0}
               >
-                {t('products.addToCart', 'Ajouter au panier')}
+                {product.stock === 0 
+                  ? t('products.outOfStock', 'Rupture de stock')
+                  : t('products.addToCart', 'Ajouter au panier')}
               </Button>
             </CardContent>
           </Card>
@@ -179,7 +181,7 @@ const Products: React.FC = () => {
       {/* Pagination */}
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
         <Pagination 
-          count={10} 
+          count={totalPages} 
           page={page} 
           onChange={handlePageChange} 
           color="primary" 
